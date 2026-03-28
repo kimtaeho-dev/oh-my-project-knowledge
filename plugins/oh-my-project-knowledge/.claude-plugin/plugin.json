@@ -5,9 +5,6 @@
   "author": {
     "name": "kimtaeho-dev"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kimtaeho-dev/oh-my-claude-plugins"
-  },
+  "repository": "https://github.com/kimtaeho-dev/oh-my-claude-plugins",
   "license": "MIT"
 }
