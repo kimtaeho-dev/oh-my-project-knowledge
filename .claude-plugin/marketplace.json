@@ -11,7 +11,7 @@
       "name": "oh-my-project-knowledge",
       "source": "./plugins/oh-my-project-knowledge",
       "description": "코드베이스를 분석하여 프로젝트/비즈니스 지식을 문서화하는 플러그인. 도메인 구조, 영향 관계, 비즈니스 규칙, 용어집, 기획서를 자동 생성합니다.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }
