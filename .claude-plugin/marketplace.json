@@ -12,6 +12,12 @@
       "source": "./plugins/oh-my-project-knowledge",
       "description": "코드베이스를 분석하여 프로젝트/비즈니스 지식을 문서화하는 플러그인. 도메인 구조, 영향 관계, 비즈니스 규칙, 용어집, 기획서를 자동 생성합니다.",
       "version": "0.2.0"
+    },
+    {
+      "name": "oh-my-claude-setup",
+      "source": "./plugins/oh-my-claude-setup",
+      "description": "프로젝트에 이상적인 Claude Code 초기 환경(CLAUDE.md, 원칙 파일, 이슈 트래킹)을 자동 구성하는 플러그인",
+      "version": "0.1.0"
     }
   ]
 }

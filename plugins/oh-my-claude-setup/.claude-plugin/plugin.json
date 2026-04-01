@@ -1,0 +1,10 @@
+{
+  "name": "oh-my-claude-setup",
+  "description": "프로젝트에 이상적인 Claude Code 초기 환경(CLAUDE.md, 원칙 파일, 이슈 트래킹)을 자동 구성하는 플러그인",
+  "version": "0.1.0",
+  "author": {
+    "name": "kimtaeho-dev"
+  },
+  "repository": "https://github.com/kimtaeho-dev/oh-my-claude-plugins",
+  "license": "MIT"
+}
