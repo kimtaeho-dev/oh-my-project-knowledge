@@ -3,12 +3,64 @@ name: principles-spec
 description: |
   .claude/rules/principles/ 하위에 생성할 원칙 파일들의 내용 정의.
   oh-my-claude-setup:init 명령 실행 시 반드시 이 정의를 따라 각 파일을 생성한다.
+  
+  hook 연동 원칙:
+    - hook이 강제하는 규칙은 principles에서 완전히 제거한다 (중복 지시 방지, 컨텍스트 절약)
+    - principles에는 Claude의 판단이 필요한 규칙만 남긴다
+    - hook이 어떤 규칙을 담당하는지는 hooks-overview.md에서 한 줄 요약으로 관리한다
+    - hooks가 구성되지 않은 프로젝트는 hooks-spec에서 hooks 미구성 분기로 처리한다
+  
+  hook 구성 시 제거되는 파일:
+    - command-principles.md (전체가 guard-bash.sh로 대체)
+  
+  hook 구성 시 제거되는 규칙:
+    - git-workflow.md: push main/develop 금지, git add . 금지, 디버그 코드 검사, .env staging 차단, 커밋 필수
+    - code-modification.md: 보호 파일 수정 차단, 완료 전 검증(포맷/린트/타입체크)
 ---
 
 # 원칙 파일 정의 (Principles Spec)
 
 아래 정의된 각 파일을 `.claude/rules/principles/` 디렉토리에 생성한다.
 기존 파일이 존재하면 내용이 중복되는 항목은 통합하여 중복 없이 정리한다.
+
+hooks가 구성된 프로젝트에서는 `hooks-overview.md`도 함께 생성하고,
+`command-principles.md`는 생성하지 않는다.
+
+---
+
+## hooks-overview.md (hooks 구성 시에만 생성)
+
+```markdown
+# Hooks 개요
+
+아래 규칙은 `.claude/hooks/` 스크립트에 의해 자동 강제된다.
+별도로 실행하거나 확인할 필요 없다. 차단 시 안내 메시지가 제공된다.
+
+| Hook | 강제 규칙 |
+|------|-----------|
+| session-init.sh | 세션 시작 시 git 상태, 런타임 버전, 작업 계획, lessons 자동 주입 |
+| protect-files.sh | .env, config, lock 파일 등 보호 파일 수정 차단 |
+| guard-bash.sh | 셸 합성 명령, git add ., push main/develop, 디버그 코드 커밋 차단 |
+| post-edit-quality.sh | 매 편집마다 포매터 + 린터 자동 실행 |
+| stop-verify.sh | 타입 체크 + 미커밋 코드 변경 시 커밋 요청 |
+
+보호 파일 패턴 수정 → .claude/hooks/protect-files.sh
+Git 전략 변경 → .claude/hooks/guard-bash.sh
+```
+
+---
+
+## command-principles.md (hooks 미구성 시에만 생성)
+
+```markdown
+# 명령어 작성 원칙
+
+섹션에 관계없이 모든 작업에서 아래 원칙을 예외 없이 따른다.
+
+- &&, ||, ; 등 명령어를 연결하는 셸 연산자는 사용하지 않는다. 각 명령어를 순서대로 개별 실행한다
+- 커밋 메시지에 $()나 백틱을 사용하지 않는다. 줄바꿈이 필요한 경우 -m 옵션을 여러 번 사용한다
+  예시: git commit -m "feat: 로그인 구현" -m "- 소셜 로그인 추가" -m "- 세션 처리 개선"
+```
 
 ---
 
@@ -19,7 +71,7 @@ description: |
 
 새 작업 요청을 받으면 아래 순서를 예외 없이 따른다.
 
-1. 현재 브랜치와 상태를 확인한다 (git status, git branch)
+1. 세션 컨텍스트에 주입된 프로젝트 상태 정보를 확인한다
 2. 요청된 작업 내용을 분석하여 작업 범위와 유형을 스스로 판단한다
 3. 사소하지 않은 작업(3단계 이상이거나 새로운 파일/모듈 생성이 필요한 경우)은 계획 모드로 시작한다
    - .claude/tasks/plans/{브랜치명}.md 파일을 새로 생성하고 체크 가능한 항목으로 계획을 작성한다
@@ -28,8 +80,7 @@ description: |
    - 각 단계마다 상위 수준 요약을 제공한다
    - 완료 후 해당 파일에 검토 섹션을 추가한다
 4. 판단된 작업 유형에 따라 브랜치명을 결정하고 분기 기준 브랜치를 최신화한 후 작업 브랜치를 생성한다
-   - release/hotfix를 제외한 모든 작업: develop을 최신화(git checkout develop → git pull origin develop) 후 브랜치 생성
-   - release/hotfix: main을 최신화(git checkout main → git pull origin main) 후 브랜치 생성
+   - 분기 기준 브랜치는 git-workflow.md에 정의된 브랜치 전략을 따른다
 ```
 
 ---
@@ -89,10 +140,8 @@ description: |
   - 변경 범위가 예상보다 크게 확대되는 경우
   - 접근 방식이 잘못됐다고 판단되는 경우
 
-## 완료 전 검증
+## 완료 기준
 
-- 작동한다는 것을 증명하기 전까지 작업 완료로 표시하지 않는다
-- 테스트 실행, 로그 확인, 정확성 입증을 거친다
 - 스스로에게 물어본다: "시니어 엔지니어가 이걸 승인할까?"
 - 작업 완료 시 변경사항이 .claude/tasks/known-issues.md의 기존 이슈에 영향을 주면 해당 항목을 업데이트한다
 - 작업 중 새로운 TODO/FIXME를 발견하면 즉시 .claude/tasks/known-issues.md에 추가한다
@@ -107,6 +156,21 @@ description: |
 
 ## git-workflow.md
 
+이 파일은 감지된 Git 전략에 따라 내용이 달라진다.
+COMMIT_LANG 설정에 따라 커밋 메시지 형식 섹션의 설명 언어와 예시를 해당 언어로 작성한다.
+아래 템플릿은 한국어(기본값) 기준이며, COMMIT_LANG이 영어인 경우 다음과 같이 변경한다:
+- `형식: {prefix}: {한국어 설명}` → `형식: {prefix}: {English description}`
+- 예시: `feat: 로그인 페이지 UI 구현` → `feat: implement login page UI`
+
+### Git 전략 감지 규칙
+
+init.md 1단계에서 아래 순서로 판단한다:
+1. `develop` 브랜치 존재 (`git branch -a`에서 확인) → **Git Flow**
+2. `develop` 없음 + `main` 또는 `master`만 존재 → **GitHub Flow**
+3. 판단 불가 → 사용자에게 질문: "Git 전략이 무엇인가요? (Git Flow / GitHub Flow / Trunk-based / 기타)"
+
+### Git Flow인 경우
+
 ```markdown
 # Git Workflow
 
@@ -114,7 +178,6 @@ description: |
 
 - Git Flow를 따른다
 - 영구 브랜치: main, develop
-- main, develop에 직접 commit 및 push 금지
 - 브랜치 유형별 네이밍:
   - feature/{설명}: 기능 구현 (develop 기준, 예: feature/login-ui)
   - fix/{설명}: 버그 수정 (develop 기준, 예: fix/token-expiry)
@@ -125,11 +188,7 @@ description: |
 ## 커밋 원칙
 
 - 기능 구현 / 버그 수정 / 설정 변경 / 리팩토링은 각각 별도 커밋으로 분리한다
-- git add . 사용 금지. 변경 파일을 명시적으로 지정한다
-- 커밋 전 아래 항목을 예외 없이 확인한다:
-  - 디버깅용 코드(console.log, print, debugger 등) 잔존 여부
-  - .env, 빌드 산출물, 로그 파일의 staging 포함 여부
-  - staged 파일이 이번 작업 범위와 관련 있는지 여부
+- staged 파일이 이번 작업 범위와 관련 있는지 확인한다
 
 ## 커밋 메시지 형식
 
@@ -145,9 +204,86 @@ description: |
 
 예시: feat: 로그인 페이지 UI 구현 / fix: 토큰 만료 시 리다이렉트 누락 수정 / chore: ESLint 설정 추가
 
-## commit / push 규칙
+## push 규칙
 
-- 작업 완료 후 commit은 선택이 아니라 필수다. 어떠한 경우에도 commit 없이 작업을 종료하지 않는다
+- push는 사용자가 명시적으로 요청한 경우에만 수행한다
+```
+
+### GitHub Flow인 경우
+
+```markdown
+# Git Workflow
+
+## 브랜치 전략
+
+- GitHub Flow를 따른다
+- 영구 브랜치: main
+- main은 항상 배포 가능한 상태를 유지한다
+- 브랜치 유형별 네이밍:
+  - feature/{설명}: 기능 구현 (main 기준, 예: feature/login-ui)
+  - fix/{설명}: 버그 수정 (main 기준, 예: fix/token-expiry)
+  - refactor/{설명}: 리팩토링 (main 기준, 예: refactor/auth-module)
+
+## 커밋 원칙
+
+- 기능 구현 / 버그 수정 / 설정 변경 / 리팩토링은 각각 별도 커밋으로 분리한다
+- staged 파일이 이번 작업 범위와 관련 있는지 확인한다
+
+## 커밋 메시지 형식
+
+형식: {prefix}: {한국어 설명}
+
+- feat: 새로운 기능 구현
+- fix: 버그 수정
+- chore: 설정, 의존성 등 기타 변경
+- refactor: 동작 변경 없는 코드 개선
+- style: 포맷, 공백 등 스타일 변경
+- docs: 문서 변경
+- test: 테스트 추가 및 수정
+
+예시: feat: 로그인 페이지 UI 구현 / fix: 토큰 만료 시 리다이렉트 누락 수정 / chore: ESLint 설정 추가
+
+## push 규칙
+
+- push는 사용자가 명시적으로 요청한 경우에만 수행한다
+- push 후 Pull Request를 생성하여 리뷰를 받는다
+```
+
+### Trunk-based인 경우
+
+```markdown
+# Git Workflow
+
+## 브랜치 전략
+
+- Trunk-based Development를 따른다
+- 영구 브랜치: main
+- 짧은 수명의 작업 브랜치를 사용하고 빠르게 main에 머지한다
+- 브랜치 유형별 네이밍:
+  - {설명}: 작업 설명 (main 기준, 예: login-ui, fix-token-expiry)
+
+## 커밋 원칙
+
+- 기능 구현 / 버그 수정 / 설정 변경 / 리팩토링은 각각 별도 커밋으로 분리한다
+- staged 파일이 이번 작업 범위와 관련 있는지 확인한다
+- 커밋은 작고 자주 한다. 하나의 커밋이 하나의 논리적 변경을 담는다
+
+## 커밋 메시지 형식
+
+형식: {prefix}: {한국어 설명}
+
+- feat: 새로운 기능 구현
+- fix: 버그 수정
+- chore: 설정, 의존성 등 기타 변경
+- refactor: 동작 변경 없는 코드 개선
+- style: 포맷, 공백 등 스타일 변경
+- docs: 문서 변경
+- test: 테스트 추가 및 수정
+
+예시: feat: 로그인 페이지 UI 구현 / fix: 토큰 만료 시 리다이렉트 누락 수정 / chore: ESLint 설정 추가
+
+## push 규칙
+
 - push는 사용자가 명시적으로 요청한 경우에만 수행한다
 ```
 
@@ -186,18 +322,4 @@ description: |
 # Lessons Learned
 
 ## 작업 프로세스
-```
-
----
-
-## command-principles.md
-
-```markdown
-# 명령어 작성 원칙
-
-섹션에 관계없이 모든 작업에서 아래 원칙을 예외 없이 따른다.
-
-- &&, ||, |, ;, > 등 셸 연산자가 포함된 합성 명령어는 사용하지 않는다. 각 명령어를 순서대로 개별 실행한다
-- 커밋 메시지에 $()나 백틱을 사용하지 않는다. 줄바꿈이 필요한 경우 -m 옵션을 여러 번 사용한다
-  예시: git commit -m "feat: 로그인 구현" -m "- 소셜 로그인 추가" -m "- 세션 처리 개선"
 ```
